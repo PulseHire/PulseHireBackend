@@ -6,6 +6,7 @@ use App\Http\Controllers\EmployerController;
 use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\AiController;
+use App\Http\Controllers\AdminController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,9 +35,12 @@ Route::post('/user/email/verify', [UserController::class, 'emailVerify']);
 
 Route::get('/employer/{userid}', [EmployerController::class, 'find']);
 Route::put('/employer/{userid}', [EmployerController::class, 'update']);
+Route::get('/employers', [EmployerController::class, 'list']);
 
 Route::get('/candidate/{userid}', [CandidateController::class, 'find']);
 Route::put('/candidate/{userid}', [CandidateController::class, 'update']);
+Route::get('/candidates', [CandidateController::class, 'list']);
+Route::post('/candidate/getbyemployer', [CandidateController::class, 'getByEmployer']);
 
 Route::post('/job', [JobController::class, 'create']);
 Route::get('/jobs', [JobController::class, 'list']);
@@ -52,3 +56,12 @@ Route::post('/job/save/info', [JobController::class, 'saveInfo']);
 Route::post('/ai/interview/start', [AiController::class, 'interviewStart']);
 Route::post('/ai/interview/answer', [AiController::class, 'interviewAnswer']);
 Route::post('/ai/interview/summary', [AiController::class, 'interviewSummary']);
+
+Route::post('/ai/match/recommend', [AiController::class, 'matchRecommend']);
+Route::post('/ai/match/recommendjson', [AiController::class, 'matchRecommendJson']);
+
+
+// #####################  admin related api ############################
+Route::post('/admin/login', [AdminController::class, 'login']);
+Route::get('/admin/infobytoken', [AdminController::class, 'infoByToken']);
+Route::post('/admin/logout', [AdminController::class, 'logout']);

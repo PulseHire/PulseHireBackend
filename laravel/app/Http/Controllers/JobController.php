@@ -57,6 +57,7 @@ class JobController extends Controller
         $searchLocation = $request->get('search_location');
 
         $filterPostUserId = $request->get('post_user_id');
+        $filterMinSalary = $request->get('filter_min_salary');
         $filterMaxSalary = $request->get('filter_max_salary');
         $filterJobTypes = $request->get('filter_job_types');
         $filterRemoteJob = $request->get('filter_remote_job');
@@ -78,6 +79,9 @@ class JobController extends Controller
         }
         if (!empty($filterPostUserId)) {
             $query->where('post_user_id', $filterPostUserId);
+        }
+        if (!empty($filterMinSalary)) {
+            $query->where('min_salary', '>=', $filterMinSalary);
         }
         if (!empty($filterMaxSalary)) {
             $query->where('max_salary', '<=', $filterMaxSalary);
