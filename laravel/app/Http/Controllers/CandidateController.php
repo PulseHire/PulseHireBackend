@@ -82,7 +82,6 @@ class CandidateController extends Controller
                 ->first();
 
         $candidate->updated_at = now();
-        error_log("start to update can..." . json_encode($request->all()));
         $candidate->update($request->all());
 
         $ret['code'] = 10000;

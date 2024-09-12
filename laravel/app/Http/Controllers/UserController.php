@@ -272,6 +272,14 @@ class UserController extends Controller
             $university = $request->get('university');
             $experienceName = $request->get('experienceName');
             $experienceDescription = $request->get('experienceDescription');
+            $extraExperienceName1 = $request->get('extraExperienceName1');
+            $extraExperienceDescription1 = $request->get('extraExperienceDescription1');
+            $extraExperienceName2 = $request->get('extraExperienceName2');
+            $extraExperienceDescription2 = $request->get('extraExperienceDescription2');
+            $extraExperienceName3 = $request->get('extraExperienceName3');
+            $extraExperienceDescription3 = $request->get('extraExperienceDescription3');
+            $extraExperienceName4 = $request->get('extraExperienceName4');
+            $extraExperienceDescription4 = $request->get('extraExperienceDescription4');
 
             $candidate = new Candidate;
             $candidate->user_id = $user->id;
@@ -288,6 +296,15 @@ class UserController extends Controller
             $candidate->university = $university;
             $candidate->experience_name = $experienceName;
             $candidate->experience_description = $experienceDescription;
+            $candidate->extra_experience_name_1 = $extraExperienceName1;
+            $candidate->extra_experience_description_1 = $extraExperienceDescription1;
+            $candidate->extra_experience_name_2 = $extraExperienceName2;
+            $candidate->extra_experience_description_2 = $extraExperienceDescription2;
+            $candidate->extra_experience_name_3 = $extraExperienceName3;
+            $candidate->extra_experience_description_3 = $extraExperienceDescription3;
+            $candidate->extra_experience_name_4 = $extraExperienceName4;
+            $candidate->extra_experience_description_4 = $extraExperienceDescription4;
+
             $candidate->save();
         }
 

@@ -556,4 +556,65 @@ class JobController extends Controller
         $ret['info']['list'] = $jobApplys;
         return response()->json($ret);
     }
+
+    public function interviewInvite(Request $request)
+    {
+        $ret = [
+            'info' => [],
+            'code' => -1,
+            'message' => '',
+        ];
+
+        $candidateId = $request->get('invite_candidate_id');
+        $candidate = Candidate::find($candidateId);
+
+        if (!$candidate) {
+            $ret['code'] = 10001;
+            $ret['message'] = 'not found candidate';
+            return response()->json($ret);
+        }
+
+        $jobId = $request->get('job_id');
+        $job = Job::find($jobId);
+
+        if (!$job) {
+            $ret['code'] = 10002;
+            $ret['message'] = 'not found this job';
+            return response()->json($ret);
+        }
+
+        $userId = $candidate->user_id;
+        $user = User::find($userId);
+        if (!$user) {
+            $ret['code'] = 10003;
+            $ret['message'] = 'not found user';
+            return response()->json($ret);
+        }
+        
+        $subject = "Interview Invitation for [$job->title] at [$job->company_name]";
+        $message = "Dear [$candidate->first_name $candidate->last_name],
+
+        Thank you for your interest in the [$job->title] position at [$job->company_name]. We are 
+        pleased to inform you that your application has been reviewed, and we would like to 
+        invite you for an interview.
+
+        Please confirm your interest in scheduling an interview by replying to this email at your 
+        earliest convenience. Once we receive your confirmation, we will provide you with the 
+        available dates and times for the interview.
+
+        We look forward to discussing how your skills and experiences align with our needs.
+
+        Best regards,
+        PulseHire Team";
+
+        $toEmail = $user->email;
+        Mail::raw($message, function ($message) use ($toEmail, $subject) {
+            $message->to($toEmail)
+                    ->subject($subject);
+        });
+
+        $ret['code'] = 10000;
+        $ret['message'] = "send interview invite successfully.";
+        return response()->json($ret);
+    }
 }

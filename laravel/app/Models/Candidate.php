@@ -17,6 +17,8 @@ class Candidate extends Model
         'address_line1', 'address_line2',
         'country', 'city', 'province', 'postal_code', 'current_job', 'skill',
         'degree', 'university', 'experience_name', 'experience_description',
+        'extra_experience_name_1', 'extra_experience_description_1','extra_experience_name_2', 'extra_experience_description_2',
+        'extra_experience_name_3', 'extra_experience_description_3','extra_experience_name_4', 'extra_experience_description_4',
         'resume_url', 'created_at', 'updated_at'
     ];
 

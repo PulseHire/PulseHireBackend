@@ -52,6 +52,7 @@ Route::post('/job/apply/confirm', [JobController::class, 'applyConfirm']);
 Route::post('/job/save', [JobController::class, 'save']);
 Route::post('/job/unsave', [JobController::class, 'unsave']);
 Route::post('/job/save/info', [JobController::class, 'saveInfo']);
+Route::post('/job/interview/invite', [JobController::class, 'interviewInvite']);
 
 Route::post('/ai/interview/start', [AiController::class, 'interviewStart']);
 Route::post('/ai/interview/answer', [AiController::class, 'interviewAnswer']);
@@ -59,6 +60,8 @@ Route::post('/ai/interview/summary', [AiController::class, 'interviewSummary']);
 
 Route::post('/ai/match/recommend', [AiController::class, 'matchRecommend']);
 Route::post('/ai/match/recommendjson', [AiController::class, 'matchRecommendJson']);
+
+Route::post('/ai/resume/analyze', [AiController::class, 'resumeAnalyze']);
 
 
 // #####################  admin related api ############################

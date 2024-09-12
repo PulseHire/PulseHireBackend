@@ -10,6 +10,9 @@ use App\Models\Employer;
 use App\Models\Candidate;
 use Illuminate\Support\Facades\Redis;
 use App\Services\ChatGptService;
+use GuzzleHttp\Client;
+use PhpOffice\PhpWord\IOFactory;
+use Spatie\PdfToText\Pdf;
 
 class AiController extends Controller
 {
@@ -148,12 +151,13 @@ class AiController extends Controller
                         2, User can only answer questions, if he asks a question, please notify him/her to answer interview question properly
                         3, Do not prompt the user to ask questions
                         4, Avoid leading or suggesting questions in your responses
+                        5, Keep asking the same question when user trys to skip it or refuses to answer it properly
                     "
             ]    
         ];
         
         $chatGptService = new ChatGptService();
-        $gptMsg = $chatGptService->generateText($messages);
+        $gptMsg = $chatGptService->generateText($messages, ['*']);
         $chatHistory = $messages;
         $chatHistory[] = [
             "role" => "system",
@@ -204,7 +208,7 @@ class AiController extends Controller
         ];
 
         $chatGptService = new ChatGptService();
-        $gptMsg = $chatGptService->generateText($messages);
+        $gptMsg = $chatGptService->generateText($messages, ['*']);
 
         $chatHistory = $messages;
         $chatHistory[] = [
@@ -253,9 +257,15 @@ class AiController extends Controller
             'role' => "assistant",
             "content" => "Please give this candidate some comment and rating scores on his/her interview."
         ];
+        $messages[] = [
+            'role' => "assistant",
+            "content" => "There are some rules must be satistified:
+                        1, Each candidate comment must be at least 3 sentenses.
+                    "
+        ];
 
         $chatGptService = new ChatGptService();
-        $gptMsg = $chatGptService->generateText($messages);
+        $gptMsg = $chatGptService->generateText($messages, ['*']);
 
         $chatHistory = $messages;
         $chatHistory[] = [
@@ -392,23 +402,20 @@ class AiController extends Controller
             ],
             [
                 'role' => 'assistant',
-                'content' => "When the mock interview is ended, please return message as 'Interview Finished.'"
-            ],
-            [
-                'role' => 'assistant',
                 'content' => "There are some rules must be satistified:
                         1, You must choose 5 candidates, scored from high match to low match (10 highest, 1 lowest)
                         2, Leave comment and score to inform us why they are the matched ones.
-                        3, If no one matches perfectly, find the closest match.
-                        4, You do not need to tell us what you are doing, just show the result
-                        5, At the end of the response, please print a new line like this: CandidateIDs: [1,2,3,4,5], which tell us the recommend candidate IDs.
-                        6, CandidateIDs must corerespond to the recommended order, and the count must be 5
+                        3, Candidate comment must at lease 3 sentenses
+                        4, If no one matches perfectly, find the closest match.
+                        5, You do not need to tell us what you are doing, just show the result
+                        6, At the end of the response, please print a new line like this: CandidateIDs: [1,2,3,4,5], which tell us the recommend candidate IDs.
+                        7, CandidateIDs must corerespond to the recommended order, and the count must be 5
                     "
-            ]    
+            ] 
         ];
         
         $chatGptService = new ChatGptService();
-        $gptMsg = $chatGptService->generateText($messages);
+        $gptMsg = $chatGptService->generateText($messages, ['*']);
         $chatHistory = $messages;
         $chatHistory[] = [
             "role" => "system",
@@ -422,6 +429,97 @@ class AiController extends Controller
             'chatHistory' => $chatHistory
         ];
         $ret['message'] = 'match recommend successfully.';
+
+        return response()->json($ret);
+    }
+
+    /**
+     * request to resume analysis
+     */
+    public function resumeAnalyze(Request $request)
+    {
+        $ret = [
+            'info' => [],
+            'code' => -1,
+            'message' => '',
+        ];
+
+        $candidateId = $request->get('candidate_id');
+        $candidate = Candidate::find($candidateId);
+
+        if (!$candidate) {
+            $ret['code'] = 10001;
+            $ret['message'] = 'not found candidate';
+            return response()->json($ret);
+        }
+
+        $resumeUrl = $candidate->resume_url;
+
+        $client = new Client();
+        $response = $client->get($resumeUrl);
+
+        $tempFilePrefix = '';
+        $tempFileSuffix = '';
+        if (Str::contains($resumeUrl, '.docx')) {
+            $tempFilePrefix = 'word_';
+            $tempFileSuffix = '.docx';
+        } else if (Str::contains($resumeUrl, '.pdf')) {
+            $tempFilePrefix = 'pdf_';
+            $tempFileSuffix = '.pdf';
+        }
+
+        $tempFilePath = tempnam(sys_get_temp_dir(), $tempFilePrefix) . $tempFileSuffix;
+        file_put_contents($tempFilePath, $response->getBody());
+
+        
+        $text = '';
+
+        if (Str::contains($resumeUrl, '.docx')) {
+            $phpWord = IOFactory::load($tempFilePath);
+            foreach ($phpWord->getSections() as $section) {
+                foreach ($section->getElements() as $element) {
+                    if (method_exists($element, 'getText')) {
+                        $text .= $element->getText() . "\n";
+                    }
+                }
+            }
+        } else if (Str::contains($resumeUrl, '.pdf')) {
+            $text = Pdf::getText($tempFilePath);
+        }
+        
+
+        unlink($tempFilePath);
+
+        $messages = [
+            [
+                'role' => "assistant",
+                'content' => "I have a candidate resume, please help to export some fields, and then return
+                    a formatted json like this: {\"name\": \"testName\", \"email\": \"testEmail@test.com\"}
+                    resume file text is: ${text}
+                    "
+            ],
+            // a formatted json like this: {\"name\": \"testName\", \"email\": \"testEmail@test.com\", \"experience\": [{\"experience_name\": \"Junior Developer\",\"experience_description\": \"work as a junior developer\"}, {\"experience_name\": \"Senior Developer\",\"experience_description\": \"work as a senior developer\"}]}
+            [
+                'role' => 'assistant',
+                'content' => "There are some rules must be satistified:
+                        1, Needed fields are: first_name, last_name, phone, email, street, city, province, postal_code, current_job, skill, degree, university, experience_name_1, experience_description_1, experience_name_2, experience_description_2, experience_name_3, experience_description_3, experience_name_4, experience_description_4, experience_name_5, experience_description_5
+                        2, Please only return the json in reponse text, don't include other text
+                    "
+            ]
+        ];
+        
+        $chatGptService = new ChatGptService();
+        $gptMsg = $chatGptService->generateText($messages, []);
+
+        $jsonStartPos = strpos($gptMsg, '{');
+        $jsonEndPos = strpos($gptMsg, '}');
+        $jsonStr = substr($gptMsg, $jsonStartPos, $jsonEndPos - $jsonStartPos + 1);
+
+        $ret['code'] = 10000;
+        $ret['info'] = [
+            'job_detail' => json_decode($jsonStr, true)
+        ];
+        $ret['message'] = 'resume analyze successfully.';
 
         return response()->json($ret);
     }
